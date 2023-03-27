@@ -8,7 +8,8 @@ usage() {
   echo ""
   echo "OPTIONS:"
   echo "  -f, --force      Force the creation of a tag even if it already exists."
-  echo "  -l, --FILES      List of files to be committed"
+  echo "  -r, --reverse      Reverse the last commit."
+  echo "  -l, --files FILES  Specify the list of files to be committed."
   echo "  -a, --amend      Amend the previous commit instead of creating a new one."
   echo "  -r, --rebase     Rebase the current branch before committing."
   echo "  -p, --pull       Automatically pull changes from the remote before committing."
@@ -25,16 +26,19 @@ usage() {
   echo "  $0 \"Fix issue with login form\""
   echo "  $0 \"Release version 1.2.3\" \"v1.2.3\""
   echo "  $0 \"Add feature\" -l file1.txt file2.txt"
-
+  echo "  $0 -r \"Undo the last commit\""
 }
 
 ################## Define default options ##################
+files_to_commit=()
 force_tag_creation=0
 amend_previous_commit=0
 rebase_before_commit=0
 pull_changes_before_commit=0
 confirm_push=0
 display_summary=0
+reverse_commit=0
+
 
 ################## Parse options ##################
 while [[ $# -gt 0 ]]
@@ -42,6 +46,10 @@ do
   case "$1" in
     -f|--force)
       force_tag_creation=1
+      shift
+      ;;
+    -r|--reverse)
+      reverse_commit=1
       shift
       ;;
     -a|--amend)
@@ -61,8 +69,16 @@ do
       shift
       ;;
     -l|--files)
+      if [ "$#" -eq 1 ]; then
+        echo "Error: no files specified."
+        usage
+        exit 1
+      fi
       shift
-      break
+      while [[ $# -gt 0 ]] && ! [[ "$1" =~ ^- ]]; do
+        files_to_commit+=("$1")
+        shift
+      done
       ;;
     -h|--help)
       usage
@@ -87,6 +103,12 @@ if ! git rev-parse --git-dir > /dev/null 2>&1; then
   exit 1
 fi
 
+if [ "$reverse_commit" -eq 1 ]; then
+  # Reverse the last commit
+  git reset --hard HEAD~
+  exit 0
+fi
+
 # Check if commit message is provided
 if [ -z "$1" ]; then
   echo "Error: Commit message not provided."
@@ -107,12 +129,11 @@ if [ -n "$tag" ] && git tag --list | grep -q "^$tag$"; then
 fi
 
 ################## Main ##################
-# Add the specified files only to the git index
-shift
-if [ $# -gt 0 ]; then
-  git add "$@"
+# Add specified files to the git index
+if [ ${#files_to_commit[@]} -eq 0 ]; then
+    git add .
 else
-  git add .
+    git add "${files_to_commit[@]}"
 fi
 
 # Commit with the message provided as an argument
