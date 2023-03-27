@@ -10,8 +10,10 @@ usage() {
   echo "  -f, --force      Force the creation of a tag even if it already exists."
   echo "  -r, --reverse      Reverse the last commit."
   echo "  -l, --files FILES  Specify the list of files to be committed."
+  echo "  -r, --reverse      Reverse the last commit."
+  echo "  -l, --files FILES  Specify the list of files to be committed."
   echo "  -a, --amend      Amend the previous commit instead of creating a new one."
-  echo "  -r, --rebase     Rebase the current branch before committing."
+  echo "  -b, --rebase     Rebase the current branch before committing."
   echo "  -p, --pull       Automatically pull changes from the remote before committing."
   echo "  -c, --confirm    Display a confirmation message before pushing the commit and tags."
   echo "  -s, --summary    Display a summary of the changes before pushing."
@@ -27,6 +29,7 @@ usage() {
   echo "  $0 \"Release version 1.2.3\" \"v1.2.3\""
   echo "  $0 \"Add feature\" -l file1.txt file2.txt"
   echo "  $0 -r \"Undo the last commit\""
+  echo "  $0 -r \"Undo the last commit\""
 }
 
 ################## Define default options ##################
@@ -38,7 +41,6 @@ pull_changes_before_commit=0
 confirm_push=0
 display_summary=0
 reverse_commit=0
-
 
 ################## Parse options ##################
 while [[ $# -gt 0 ]]
@@ -56,7 +58,7 @@ do
       amend_previous_commit=1
       shift
       ;;
-    -r|--rebase)
+    -b|--rebase)
       rebase_before_commit=1
       shift
       ;;
@@ -69,6 +71,11 @@ do
       shift
       ;;
     -l|--files)
+      if [ "$#" -eq 1 ]; then
+        echo "Error: no files specified."
+        usage
+        exit 1
+      fi
       if [ "$#" -eq 1 ]; then
         echo "Error: no files specified."
         usage
@@ -105,10 +112,9 @@ fi
 
 if [ "$reverse_commit" -eq 1 ]; then
   # Reverse the last commit
-  git reset --hard HEAD~
+  git reset HEAD~
   exit 0
 fi
-
 # Check if commit message is provided
 if [ -z "$1" ]; then
   echo "Error: Commit message not provided."
@@ -158,7 +164,7 @@ fi
 
 
 # Automatically pull changes from the remote if requested
-if [ "$pull_changes" -eq 1 ]; then
+if [ "$pull_changes_before_commit" -eq 1 ]; then
   git pull
 fi
 
