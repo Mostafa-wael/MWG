@@ -1,0 +1,159 @@
+#!/bin/bash
+# This script is used to commit and push changes to a Git repository.
+
+################## Functions ##################
+# Define a usage function
+usage() {
+  echo "Usage: $0 [OPTIONS] COMMIT_MESSAGE [TAG_NAME]"
+  echo ""
+  echo "OPTIONS:"
+  echo "  -f, --force      Force the creation of a tag even if it already exists."
+  echo "  -l, --FILES      List of files to be committed"
+  echo "  -a, --amend      Amend the previous commit instead of creating a new one."
+  echo "  -r, --rebase     Rebase the current branch before committing."
+  echo "  -p, --pull       Automatically pull changes from the remote before committing."
+  echo "  -c, --confirm    Display a confirmation message before pushing the commit and tags."
+  echo "  -s, --summary    Display a summary of the changes before pushing."
+  echo ""
+  echo "COMMIT_MESSAGE: The message for the commit."
+  echo "TAG_NAME (optional): The name for the tag to be created."
+  echo ""
+  echo "If TAG_NAME is specified, a tag will be created with the given name and"
+  echo "the commit message as the tag message."
+  echo ""
+  echo "Example usage:"
+  echo "  $0 \"Fix issue with login form\""
+  echo "  $0 \"Release version 1.2.3\" \"v1.2.3\""
+  echo "  $0 \"Add feature\" -l file1.txt file2.txt"
+
+}
+
+################## Define default options ##################
+force_tag_creation=0
+amend_previous_commit=0
+rebase_before_commit=0
+pull_changes_before_commit=0
+confirm_push=0
+display_summary=0
+
+################## Parse options ##################
+while [[ $# -gt 0 ]]
+do
+  case "$1" in
+    -f|--force)
+      force_tag_creation=1
+      shift
+      ;;
+    -a|--amend)
+      amend_previous_commit=1
+      shift
+      ;;
+    -r|--rebase)
+      rebase_before_commit=1
+      shift
+      ;;
+    -p|--pull)
+      pull_changes_before_commit=1
+      shift
+      ;;
+    -c|--confirm)
+      confirm_push=1
+      shift
+      ;;
+    -l|--files)
+      shift
+      break
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+# Check if the user passed the help option
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  usage
+  exit 0
+fi
+
+################## Checks ##################
+# Check if the current directory is a Git repository
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+  echo "Error: Not in a Git repository."
+  exit 1
+fi
+
+# Check if commit message is provided
+if [ -z "$1" ]; then
+  echo "Error: Commit message not provided."
+  echo ""
+  usage
+  exit 1
+fi
+
+# Check if tag already exists
+tag="$2"
+if [ -n "$tag" ] && git tag --list | grep -q "^$tag$"; then
+  if [ "$force_tag_creation" -eq 1 ]; then
+    echo "Forcing the creation of tag '$tag' even though it already exists."
+  else
+    echo "Error: Tag '$tag' already exists."
+    exit 1
+  fi
+fi
+
+################## Main ##################
+# Add the specified files only to the git index
+shift
+if [ $# -gt 0 ]; then
+  git add "$@"
+else
+  git add .
+fi
+
+# Commit with the message provided as an argument
+commit_message="$1"
+if [ "$amend_previous_commit" -eq 1 ]; then
+  git commit --amend -m "$commit_message"
+else
+  git commit -m "$commit_message"
+fi
+
+# Rebase the current branch if requested
+if [ "$rebase_before_commit" -eq 1 ]; then
+  git pull --rebase
+fi
+
+# Check if a tag number is provided as an argument
+if [ -n "$2" ]; then
+  # Create a tag with the provided number and commit message
+  tag="$2"
+  git tag "$tag" HEAD -m "$commit_message"
+fi
+
+
+# Automatically pull changes from the remote if requested
+if [ "$pull_changes" -eq 1 ]; then
+  git pull
+fi
+
+# Display a summary of the changes if requested
+if [ "$display_summary" -eq 1 ]; then
+  git status --short
+fi
+
+# Confirm push if requested
+if [ "$confirm_push" -eq 1 ]; then
+  read -p "Are you sure you want to push the commit and tags to the remote repository? (y/n): " confirm
+  if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
+    echo "Aborting push."
+    exit 1
+  fi
+fi
+
+# Push the commit and any tags with --follow-tags
+git push --follow-tags
