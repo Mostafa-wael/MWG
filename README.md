@@ -19,6 +19,13 @@ A simple script to automate my git workflow.
             MMMMMMMM               MMMMMMMM            WWW             WWW                  GGGGGG   GGGG
 
 
+
+[![GitHub issues](https://img.shields.io/github/issues/Mostafa-wael/MWG)](https://github.com/Mostafa-wael/MWG/issues)
+[![GitHub forks](https://img.shields.io/github/forks/Mostafa-wael/MWG)](https://github.com/Mostafa-wael/MWG/network)
+[![GitHub stars](https://img.shields.io/github/stars/Mostafa-wael/MWG)](https://github.com/Mostafa-wael/MWG/stargazers)
+[![GitHub license](https://img.shields.io/github/license/Mostafa-wael/MWG)](https://github.com/Mostafa-wael/MWG/blob/master/LICENSE)
+
+## About
 Most of us use git to manage our projects. We start by adding the files we want to track, then we commit them, and finally we push them to the remote repository. Then, we may want to add a tag to the commit, or we may want to create a release.
 We do this over and over again, and it can get a bit tedious. So, I decided to automate this process. I hope it helps you too!
 
